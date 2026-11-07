@@ -1,16 +1,11 @@
 import React from 'react';
-import { View, Text, Button, StatusBar } from 'react-native';
+import { View, Text } from 'react-native';
 import styles from '../style';
 
-export default function Films({ navigation }) {
+export default function Planets() {
     return (
         <View style={styles.container}>
-            <Text>Films</Text>
-            <Button
-                title="Go to spaceships"
-                onPress={() => navigation.navigate('Spaceships')}
-            />
+            <Text>Planets</Text>
         </View>
     );
 }
-
