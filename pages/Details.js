@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Button, StatusBar } from "react-native";
-import styles from "./styles";
+import styles from "../style";
 
 export default function Details({ route, navigation }) {
   const { content, title } = route.params;
