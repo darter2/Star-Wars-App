@@ -1,45 +1,45 @@
-const items = new Array(100).fill(null).map((v, i) => `Item ${i}`);
+const API_BASE_URL = "https://www.swapi.tech/api";
 
-const BASE_URL = 'https://www.swapi.tech/api';
+async function fetchCollection(path, getName, isPaginated) {
+  let url = `${API_BASE_URL}/${path}`;
+  const names = [];
 
-async function fetchCollection(path) {
-  const response = await fetch(`${BASE_URL}/${path}`);
+  while (url) {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Could not load ${path} (HTTP ${response.status}).`);
+    }
 
-  if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
+    const payload = await response.json();
+    const records = isPaginated ? payload.results : payload.result;
+    if (!Array.isArray(records)) {
+      throw new Error(`The ${path} API response did not contain a list.`);
+    }
+
+    names.push(
+      ...records.map((record) => {
+        const name = getName(record);
+        if (typeof name !== "string") {
+          throw new Error(`The ${path} API returned an item without a name.`);
+        }
+        return name;
+      })
+    );
+
+    url = isPaginated ? payload.next : null;
   }
 
-  const body = await response.json();
-
-  return body.results.map(({ uid, name }) => ({
-    key: uid,
-    value: name,
-  }));
+  return names;
 }
 
-export const getFilms = () => fetchCollection('films');
-export const getPlanets = () => fetchCollection('planets?page=1&limit=10');
-export const getSpaceships = () => fetchCollection('starships?page=1&limit=10');
-
-
-function filterAndSort(data, text, asc) {
-  return data
-    .filter((i) => text.length === 0 || i.includes(text))
-    .sort(
-      asc
-        ? (a, b) => (b > a ? -1 : a === b ? 0 : 1)
-        : (a, b) => (a > b ? -1 : a === b ? 0 : 1)
-    );
+export function getPlanets() {
+  return fetchCollection("planets", (planet) => planet.name, true);
 }
 
+export function getFilms() {
+  return fetchCollection("films", (film) => film.properties?.title, false);
+}
 
-export function fetchItems(filter, asc) {
-  return new Promise((resolve) => {
-    resolve({
-      json: () =>
-        Promise.resolve({
-          items: filterAndSort(items, filter, asc),
-        }),
-    });
-  });
+export function getStarships() {
+  return fetchCollection("starships", (starship) => starship.name, true);
 }

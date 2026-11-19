@@ -1,11 +1,13 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
 import styles from '../style';
+import ListContainer from '../components/ListContainer';
+import { getStarships } from '../components/Api';
 
 export default function Spaceships() {
     return (
         <View style={styles.container}>
-            <Text>Spaceships</Text>
+            <ListContainer loadItems={getStarships} />
         </View>
     );
 }

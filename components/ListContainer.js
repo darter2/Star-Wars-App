@@ -1,55 +1,53 @@
 import React, { useState, useMemo, useEffect } from "react";
 import List from "./List";
-import {fetchItems} from "./Api";
-function mapItems(items) {
-    return items.map((value,i) => ({key: i.toString(), value}));
-}
 
-const array = new Array(100).fill (null).map((v,i) => `Item ${i}`);
-
-function filterAndSort(text,asc) {
-    return array
-    .filter((i) => text.length === 0 || i.includes(text))
-    .sort(
-        asc
-        ? (a, b) => (a > b ? 1 : a < b ? -1 : 0)
-        : (a, b) => (b > a ? 1 : b < a ? -1 : 0)
-    );
-}
-
-export default function ListContainer() {
- const [asc, setAsc] = useState(true);
+export default function ListContainer({ loadItems }) {
+  const [asc, setAsc] = useState(true);
   const [filter, setFilter] = useState("");
-  const [data, setData] = useState([]);
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchItems(filter, asc)
-      .then((resp) => resp.json())
-      .then(({ items }) => {
-        setData(mapItems(items));
-      });
-  }, []);
+    let active = true;
+
+    async function load() {
+      setLoading(true);
+      setError("");
+      try {
+        const results = await loadItems();
+        if (active) setItems(results);
+      } catch (loadError) {
+        if (active) {
+          setError(loadError.message);
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [loadItems]);
+
+  const data = useMemo(() => {
+    const normalizedFilter = filter.trim().toLowerCase();
+    return items
+      .filter((item) => item.toLowerCase().includes(normalizedFilter))
+      .sort((a, b) => (asc ? a.localeCompare(b) : b.localeCompare(a)))
+      .map((value, index) => ({ key: `${index}-${value}`, value }));
+  }, [items, filter, asc]);
 
   return (
-      <List
+    <List
       data={data}
       asc={asc}
-      onFilter={(text) => {
-        fetchItems(text, asc)
-          .then((resp) => resp.json())
-          .then(({ items }) => {
-            setFilter(text);
-            setData(mapItems(items));
-          });
-      }}
-      onSort={() => {
-        fetchItems(filter, !asc)
-          .then((resp) => resp.json())
-          .then(({ items }) => {
-            setAsc(!asc);
-            setData(mapItems(items));
-          });
-      }}
+      loading={loading}
+      error={error}
+      onFilter={setFilter}
+      onSort={() => setAsc((currentAsc) => !currentAsc)}
     />
   );
 }
